@@ -26,7 +26,7 @@
         .online-mode { background: #d4edda; color: #155724; }
         .offline-mode { background: #fff3cd; color: #856404; }
 
-        /* Стили нативной печати. Скрываем только карточки чек-листа, не трогая body */
+        /* Стили нативной печати. Скрываем интерфейс чек-листа, не трогая body */
         @media print {
             body { background: #fff; padding: 0; margin: 0; }
             .container, #step-1-form, #step-3-checklist, .network-status, h2 { display: none !important; }
@@ -85,11 +85,11 @@
     </div>
 </div>
 
-<!-- ОФИЦИАЛЬНАЯ ПЕЧАТНАЯ ФОРМА С ДОБАВЛЕННОЙ ШАПКОЙ ДЛЯ СТАБИЛЬНОГО PDF -->
+<!-- ОФИЦИАЛЬНАЯ ПЕЧАТНАЯ ФОРМА С ИСПРАВЛЕННОЙ ШАПКОЙ ДЛЯ СТАБИЛЬНОГО PDF -->
 <div id="print-blank-zone">
     <div style="text-align: center; border-bottom: 2px solid #2c3e50; padding-bottom: 10px; margin-bottom: 25px;">
-        <!-- Добавлено официальное название акта в шапку документа -->
-        <h2 style="margin: 0; color: #2c3e50; font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">АКТ ПРОВЕРКИ СОБЛЮДЕНИЯ ТРЕБОВАНИЙ ОТиПБ</h2>
+        <!-- ТЕГ ИЗМЕНЕН НА DIV, ЧТОБЫ CSS ОШИБОЧНО НЕ СКРЫВАЛ ЕГО ПРИ ПЕЧАТИ -->
+        <div style="margin: 0; color: #2c3e50; font-size: 22px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">АКТ ПРОВЕРКИ СОБЛЮДЕНИЯ ТРЕБОВАНИЙ ОТиПБ</div>
     </div>
     
     <table style="width: 100%; margin-bottom: 30px; font-size: 14px; border-collapse: collapse;">
