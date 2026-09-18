@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Контроль ОТиПБ</title>
+    <title>Чек-лист ОТиПБ</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
     <style>
@@ -26,10 +26,10 @@
         .online-mode { background: #d4edda; color: #155724; }
         .offline-mode { background: #fff3cd; color: #856404; }
 
-        /* ИСПРАВЛЕНО: Стили нативной печати. Скрываем только карточки чек-листа, не трогая body */
+        /* Стили нативной печати. Скрываем только карточки чек-листа, не трогая body */
         @media print {
             body { background: #fff; padding: 0; margin: 0; }
-            #step-1-form, #step-3-checklist, .network-status, h2 { display: none !important; }
+            .container, #step-1-form, #step-3-checklist, .network-status, h2 { display: none !important; }
             #print-blank-zone { display: block !important; }
         }
     </style>
@@ -85,10 +85,11 @@
     </div>
 </div>
 
-<!-- ОФИЦИАЛЬНАЯ ПЕЧАТНАЯ ФОРМА С ТАБЛИЧНЫМ ФОРМАТИРОВАНИЕМ ДЛЯ СТАБИЛЬНОГО PDF -->
+<!-- ОФИЦИАЛЬНАЯ ПЕЧАТНАЯ ФОРМА С ДОБАВЛЕННОЙ ШАПКОЙ ДЛЯ СТАБИЛЬНОГО PDF -->
 <div id="print-blank-zone">
     <div style="text-align: center; border-bottom: 2px solid #2c3e50; padding-bottom: 10px; margin-bottom: 25px;">
-        <h2 style="margin: 0; color: #2c3e50; font-size: 20px;">АКТ ПРОВЕРКИ СОБЛЮДЕНИЯ ТРЕБОВАНИЙ ОТиПБ</h2>
+        <!-- Добавлено официальное название акта в шапку документа -->
+        <h2 style="margin: 0; color: #2c3e50; font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">АКТ ПРОВЕРКИ СОБЛЮДЕНИЯ ТРЕБОВАНИЙ ОТиПБ</h2>
     </div>
     
     <table style="width: 100%; margin-bottom: 30px; font-size: 14px; border-collapse: collapse;">
@@ -106,7 +107,7 @@
                 <th style="border: 1px solid #ddd; padding: 10px; width: 5%; text-align: center; font-size: 14px;">№</th>
                 <th style="border: 1px solid #ddd; padding: 10px; width: 20%; text-align: left; font-size: 14px;">Раздел</th>
                 <th style="border: 1px solid #ddd; padding: 10px; width: 45%; text-align: left; font-size: 14px;">Требование безопасности</th>
-                <th style="border: 1px solid #ddd; padding: 10px; width: 30%; text-align: left; font-size: 14px;">Замечание инспектора</th>
+                <th style="border: 1px solid #ddd; padding: 10px; width: 30%; text-align: left; font-size: 14px;">Коментарий</th>
             </tr>
         </thead>
         <tbody id="p-violations-tbody">
