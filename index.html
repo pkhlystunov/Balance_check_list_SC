@@ -6,18 +6,13 @@
     <title>Контроль ОТиПБ</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
+    <!-- Библиотека PDF -->
+    <script src="https://cloudflare.com"></script>
     <style>
-        #print-blank-zone { display: none; background: #fff; color: #000; padding: 20px; font-family: Arial, sans-serif; line-height: 1.5; }
-        @media print {
-            body { background: #fff; padding: 0; margin: 0; }
-            .container { display: none !important; }
-            #print-blank-zone { display: block !important; }
-        }
-        /* Индикатор сети */
+        #print-blank-zone { display: none; background: #fff; color: #000; padding: 25px; font-family: Arial, sans-serif; }
         .network-status { text-align: center; padding: 8px; font-weight: bold; border-radius: 6px; margin-bottom: 15px; font-size: 14px; }
         .online-mode { background: #d4edda; color: #155724; }
         .offline-mode { background: #fff3cd; color: #856404; }
-        .sync-badge { background: #e74c3c; color: white; padding: 2px 6px; border-radius: 10px; font-size: 12px; margin-left: 5px; display: none; }
     </style>
 </head>
 <body>
@@ -25,7 +20,6 @@
 <div class="container">
     <h2>📋 Контроль Охраны Труда и ПБ</h2>
     
-    <!-- Светофор статуса сети -->
     <div id="net-indicator" class="network-status online-mode">🌐 Режим: Онлайн (Данные пишутся в облако)</div>
 
     <div id="step-1-form" class="card primary-border">
@@ -64,25 +58,29 @@
         
         <div style="margin-top: 25px; display: flex; flex-direction: column; gap: 10px;">
             <button onclick="submitAuditWithOffline()" id="submit-btn" class="btn btn-primary" style="background: #27ae60;">1. Сохранить Акт (В реестр) 💾</button>
-            <button onclick="openNativePrintSystem()" id="pdf-btn" class="btn btn-secondary" style="background: #3498db; color: white;" disabled>2. Открыть Акт в PDF / Печать 📄</button>
+            <button onclick="downloadChecklistPdf()" id="pdf-btn" class="btn btn-secondary" style="background: #3498db; color: white;" disabled>2. Скачать Акт в PDF 📄</button>
             <button onclick="backToStep1()" class="btn btn-secondary">← Назад к выбору объекта</button>
         </div>
     </div>
 </div>
 
+<!-- ЗОНА ПЕЧАТИ (ПРИНУДИТЕЛЬНО НАСТРОЕНА НА ВЫВОД ВСЕХ СТРОК БЕЗ ОБРЕЗАНИЙ) -->
 <div id="print-blank-zone">
-    <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;">
-        <h2 style="margin: 0 0 5px 0; font-size: 20px;">АКТ ПРОВЕРКИ СОБЛЮДЕНИЯ ТРЕБОВАНИЙ ОТиПБ</h2>
+    <div style="text-align: center; border-bottom: 2px solid #2c3e50; padding-bottom: 10px; margin-bottom: 25px;">
+        <h2 style="margin: 0; color: #2c3e50; font-size: 20px;">АКТ ПРОВЕРКИ СОБЛЮДЕНИЯ ТРЕБОВАНИЙ ОТиПБ</h2>
     </div>
-    <table style="width: 100%; margin-bottom: 25px; font-size: 14px; border-collapse: collapse;">
-        <tr><td style="padding: 5px 0; font-weight: bold; width: 35%;">Дата проверки:</td><td id="p-date"></td></tr>
-        <tr><td style="padding: 5px 0; font-weight: bold;">Выполнил проверку (Инспектор):</td><td id="p-inspector"></td></tr>
-        <tr><td style="padding: 5px 0; font-weight: bold;">Объект контроля:</td><td id="p-object"></td></tr>
-        <tr><td style="padding: 5px 0; font-weight: bold;">Подрядная организация:</td><td id="p-contractor"></td></tr>
+    
+    <table style="width: 100%; margin-bottom: 30px; font-size: 14px; border-collapse: collapse;">
+        <tr><td style="padding: 6px 0; font-weight: bold; width: 35%; border-bottom: 1px solid #eee;">Дата проверки:</td><td id="p-date" style="padding: 6px 0; border-bottom: 1px solid #eee;"></td></tr>
+        <tr><td style="padding: 6px 0; font-weight: bold; border-bottom: 1px solid #eee;">Выполнил проверку:</td><td id="p-inspector" style="padding: 6px 0; border-bottom: 1px solid #eee;"></td></tr>
+        <tr><td style="padding: 6px 0; font-weight: bold; border-bottom: 1px solid #eee;">Объект контроля:</td><td id="p-object" style="padding: 4px 0; border-bottom: 1px solid #eee;"></td></tr>
+        <tr><td style="padding: 6px 0; font-weight: bold; border-bottom: 1px solid #eee;">Подрядная организация:</td><td id="p-contractor" style="padding: 6px 0; border-bottom: 1px solid #eee;"></td></tr>
     </table>
-    <div style="font-size: 15px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Результаты инспекции и выявленные нарушения:</div>
-    <div id="p-violations" style="font-size: 14px; white-space: pre-wrap; line-height: 1.6;"></div>
-    <div style="margin-top: 60px; display: flex; justify-content: space-between; font-size: 14px;">
+    
+    <div style="font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #2c3e50; border-bottom: 1px solid #2c3e50; padding-bottom: 5px;">Выявленные нарушения и замечания:</div>
+    <div id="p-violations" style="font-size: 14px; white-space: pre-wrap; line-height: 1.6; color: #000; margin-bottom: 40px;"></div>
+    
+    <div style="margin-top: 50px; border-top: 1px solid #333; padding-top: 20px; display: flex; justify-content: space-between; font-size: 14px;">
         <div>Подпись проверяющего: _____________________</div>
         <div>Подпись представителя подрядчика: _____________________</div>
     </div>
