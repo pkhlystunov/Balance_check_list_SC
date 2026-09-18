@@ -6,9 +6,8 @@
     <title>Контроль ОТиПБ</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
-    <!-- Библиотека PDF -->
-    <script src="https://githack.com"></script>
     <style>
+        /* Зона печатного бланка по умолчанию скрыта на экране */
         #print-blank-zone { 
             display: none; 
             background: #fff; 
@@ -24,13 +23,15 @@
             margin-bottom: 15px; 
             font-size: 14px; 
         }
-        .online-mode { 
-            background: #d4edda; 
-            color: #155724; 
-        }
-        .offline-mode { 
-            background: #fff3cd; 
-            color: #856404; 
+        .online-mode { background: #d4edda; color: #155724; }
+        .offline-mode { background: #fff3cd; color: #856404; }
+
+        /* ВЕЛИКАЯ МАГИЯ НА ТЕЛЕФОНЕ И ПК: В момент вызова сохранения в PDF 
+           браузер сам скроет интерфейс приложения и покажет только чистую таблицу! */
+        @media print {
+            body { background: #fff; padding: 0; margin: 0; }
+            .container { display: none !important; }
+            #print-blank-zone { display: block !important; }
         }
     </style>
 </head>
@@ -108,7 +109,7 @@
             </tr>
         </thead>
         <tbody id="p-violations-tbody">
-            <!-- Строки генерируются через app.js без конфликтов разметки -->
+            <!-- Строки генерируются без конфликтов разметки -->
         </tbody>
     </table>
     
