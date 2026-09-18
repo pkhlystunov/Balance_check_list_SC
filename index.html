@@ -7,7 +7,7 @@
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Зона печатного бланка по умолчанию скрыта на экране */
+        /* Зона печатного бланка на экране устройства скрыта */
         #print-blank-zone { 
             display: none; 
             background: #fff; 
@@ -26,11 +26,10 @@
         .online-mode { background: #d4edda; color: #155724; }
         .offline-mode { background: #fff3cd; color: #856404; }
 
-        /* ВЕЛИКАЯ МАГИЯ НА ТЕЛЕФОНЕ И ПК: В момент вызова сохранения в PDF 
-           браузер сам скроет интерфейс приложения и покажет только чистую таблицу! */
+        /* ИСПРАВЛЕНО: Стили нативной печати. Скрываем только карточки чек-листа, не трогая body */
         @media print {
             body { background: #fff; padding: 0; margin: 0; }
-            .container { display: none !important; }
+            #step-1-form, #step-3-checklist, .network-status, h2 { display: none !important; }
             #print-blank-zone { display: block !important; }
         }
     </style>
@@ -42,6 +41,7 @@
     
     <div id="net-indicator" class="network-status online-mode">🌐 Режим: Онлайн (Данные пишутся в облако)</div>
 
+    <!-- ШАГ 1: Вход в систему -->
     <div id="step-1-form" class="card primary-border">
         <div class="loading-overlay" id="setup-loading">⏳ Подключение к реестрам Google Таблиц...</div>
         
@@ -65,6 +65,7 @@
         <div id="error-display" class="error-log"></div>
     </div>
 
+    <!-- ШАГ 2: Чек-лист обхода -->
     <div id="step-3-checklist" style="display:none;">
         <div class="audit-header card">
             <h3 style="margin-top:0; color:#2c3e50;">Текущий обход</h3>
@@ -109,7 +110,7 @@
             </tr>
         </thead>
         <tbody id="p-violations-tbody">
-            <!-- Строки генерируются без конфликтов разметки -->
+            <!-- Строки генерируются динамически -->
         </tbody>
     </table>
     
