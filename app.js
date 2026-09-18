@@ -2,9 +2,12 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbyLFU7ceVKxS-L8kDjcJwKLZ-AAXXXzOICKNlTypxu_zopUcPtf_e90pzDi6xmbsDy7/exec"; 
 
 let auditSession = { inspector: '', objectName: '', contractor: '', results: [] };
+let finalViolationsText = "";
 
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').then(() => console.log("Офлайн-модуль активен"));
+    navigator.serviceWorker.register('./sw.js').then(function() {
+        console.log("Офлайн-модуль активен");
+    });
 }
 
 window.addEventListener('online', updateNetworkStatus);
@@ -26,7 +29,11 @@ document.addEventListener("DOMContentLoaded", async function() {
     updateNetworkStatus();
     try {
         const response = await fetch(API_URL + "?action=getSetupData", { method: "GET", redirect: "follow" });
-        const res = await response.json();
+        const rawText = await response.text();
+        if (rawText.includes("Google Accounts") || rawText.includes("Sign in")) {
+            throw new Error("Защита Google заблокировала анонимный доступ.");
+        }
+        const res = JSON.parse(rawText);
         if (res.success) {
             localStorage.setItem('cached_setup', JSON.stringify(res));
             populateSelects(res);
@@ -46,8 +53,12 @@ function populateSelects(res) {
     const contractorSelect = document.getElementById('contractor-select');
     objectSelect.innerHTML = '<option value="">-- Выберите объект --</option>';
     contractorSelect.innerHTML = '<option value="">-- Выберите подрядчика --</option>';
-    res.objects.forEach(obj => objectSelect.add(new Option(obj.id + " | " + obj.name, obj.name)));
-    res.contractors.forEach(contr => contractorSelect.add(new Option(contr, contr)));
+    res.objects.forEach(function(obj) {
+        objectSelect.add(new Option(obj.id + " | " + obj.name, obj.name));
+    });
+    res.contractors.forEach(function(contr) {
+        contractorSelect.add(new Option(contr, contr));
+    });
     document.getElementById('setup-loading').style.display = 'none';
     document.getElementById('form-fields-wrapper').style.display = 'block';
 }
@@ -58,7 +69,11 @@ async function startFullAudit() {
     const contr = document.getElementById('contractor-select').value;
     if(!insp || !obj || !contr) return alert("Заполните форму первого шага!");
     
-    auditSession.inspector = insp; auditSession.objectName = obj; auditSession.contractor = contr; auditSession.results = [];
+    auditSession.inspector = insp; 
+    auditSession.objectName = obj; 
+    auditSession.contractor = contr; 
+    auditSession.results = [];
+    
     document.getElementById('pdf-btn').disabled = true;
     document.getElementById('submit-btn').disabled = false;
     document.getElementById('submit-btn').innerText = "1. Сохранить Акт (В реестр) 💾";
@@ -93,23 +108,46 @@ async function startFullAudit() {
 function renderChecklist(data) {
     const container = document.getElementById('questions-container');
     container.innerHTML = "";
-    data.forEach(q => {
+    data.forEach(function(q) {
         const card = document.createElement('div');
-        card.className = 'card'; card.id = 'q-box-' + q.id;
-        card.innerHTML = `<div class="badge">${q.category}</div><p style="margin:5px 0 12px 0; font-size:16px; font-weight:600;">${q.question}</p>`;
-        if(q.normative) card.innerHTML += `<div class="normative-text"><b>Норматив:</b> <span>${q.normative}</span></div>`;
+        card.className = 'card'; 
+        card.id = 'q-box-' + q.id;
+        card.innerHTML = '<div class="badge">' + q.category + '</div><p style="margin:5px 0 12px 0; font-size:16px; font-weight:600;">' + q.question + '</p>';
+        if(q.normative) {
+            card.innerHTML += '<div class="normative-text"><b>Норматив:</b> <span>' + q.normative + '</span></div>';
+        }
         
-        const btnRow = document.createElement('div'); btnRow.className = 'btn-row';
-        btnRow.innerHTML = `<button type="button" class="btn btn-success" onclick="setResult(${q.id},'Соответствует','${q.question.replace(/'/g, "\\'")}','${q.category.replace(/'/g, "\\'")}','${q.normative ? q.normative.replace(/'/g, "\\'") : ''}')">Соответствует</button>
-                            <button type="button" class="btn btn-danger" onclick="setResult(${q.id},'Нарушение','${q.question.replace(/'/g, "\\'")}','${q.category.replace(/'/g, "\\'")}','${q.normative ? q.normative.replace(/'/g, "\\'") : ''}')">Нарушение</button>`;
+        const btnRow = document.createElement('div'); 
+        btnRow.className = 'btn-row';
+        
+        const okBtn = document.createElement('button');
+        okBtn.type = 'button';
+        okBtn.className = 'btn btn-success';
+        okBtn.textContent = 'Соответствует';
+        okBtn.onclick = function() { setResult(q.id, 'Соответствует', q.question, q.category, q.normative); };
+        
+        const failBtn = document.createElement('button');
+        failBtn.type = 'button';
+        failBtn.className = 'btn btn-danger';
+        failBtn.textContent = 'Нарушение';
+        failBtn.onclick = function() { setResult(q.id, 'Нарушение', q.question, q.category, q.normative); };
+        
+        btnRow.appendChild(okBtn);
+        btnRow.appendChild(failBtn);
         card.appendChild(btnRow);
-        card.innerHTML += `<input type="text" id="comment-${q.id}" class="comment-box" placeholder="Опишите детали нарушения...">`;
+        
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.id = 'comment-' + q.id;
+        inp.className = 'comment-box';
+        inp.placeholder = 'Опишите детали нарушения...';
+        card.appendChild(inp);
+        
         container.appendChild(card);
     });
 }
-
-function setResult(id, status, question, category, normative) {
-    let item = auditSession.results.find(r => r.id === id);
+      function setResult(id, status, question, category, normative) {
+    let item = auditSession.results.find(function(r) { return r.id === id; });
     if (!item) {
         item = { id: id, question: question, category: category, normative: normative, status: status, comment: '' };
         auditSession.results.push(item);
@@ -117,7 +155,9 @@ function setResult(id, status, question, category, normative) {
         item.status = status; 
     }
     const comp = document.getElementById('comment-' + id);
-    if (comp) comp.style.display = status === 'Нарушение' ? 'block' : 'none';
+    if (comp) {
+        comp.style.display = status === 'Нарушение' ? 'block' : 'none';
+    }
     document.getElementById('q-box-' + id).style.borderLeftColor = status === 'Соответствует' ? 'var(--success)' : 'var(--danger)';
 }
 
@@ -126,22 +166,20 @@ async function submitAuditWithOffline() {
     
     const violations = [];
     
-    // Переносим актуальные комментарии из полей инспектора в массив
-    auditSession.results.forEach(item => {
+    auditSession.results.forEach(function(item) {
         const inputField = document.getElementById('comment-' + item.id);
         if (inputField) {
             item.comment = inputField.value.trim() || "не расписано";
         }
         
         if (item.status === 'Нарушение') {
-            let line = `• [${item.category}] ${item.question}`;
-            if (item.normative) line += ` (Норматив: ${item.normative})`;
-            line += `\n  Замечание: ${item.comment}`;
+            let line = '• [' + item.category + '] ' + item.question;
+            if (item.normative) line += ' (Норматив: ' + item.normative + ')';
+            line += '\n  Замечание: ' + item.comment;
             violations.push(line);
         }
     });
 
-    // Текст для отправки в ОДНУ ячейку Google Таблицы
     auditSession.aggregatedViolations = violations.length > 0 ? violations.join("\n\n") : "Нарушений в ходе проверки не выявлено.";
 
     const btn = document.getElementById('submit-btn');
@@ -185,7 +223,6 @@ async function syncOfflineQueue() {
     alert("🔄 Обнаружен интернет: сохраненные офлайн-акты переданы в Google Таблицу!");
 }
 
-// НАДЕЖНЫЙ СБОРЩИК ЧИСТОЙ HTML-ТАБЛИЦЫ ДЛЯ ИДЕАЛЬНОЙ ГЕНЕРАЦИИ PDF БЕЗ СБОЕВ
 async function downloadChecklistPdf() {
     const btnPdf = document.getElementById('pdf-btn');
     btnPdf.disabled = true;
@@ -193,73 +230,95 @@ async function downloadChecklistPdf() {
 
     const currentDateStr = new Date().toLocaleDateString('ru-RU');
     
-    // Заполняем текстовую шапку бланка
     document.getElementById('p-date').textContent = currentDateStr;
     document.getElementById('p-inspector').textContent = auditSession.inspector;
     document.getElementById('p-object').textContent = auditSession.objectName;
     document.getElementById('p-contractor').textContent = auditSession.contractor;
     
-    // Генерируем HTML-строки таблицы нарушений
     const tbody = document.getElementById('p-violations-tbody');
-    tbody.innerHTML = ""; // очищаем старые данные
+    tbody.innerHTML = ""; 
     
-    const violationsOnly = auditSession.results.filter(r => r.status === 'Нарушение');
+    const violationsOnly = auditSession.results.filter(function(r) { return r.status === 'Нарушение'; });
     
     if (violationsOnly.length === 0) {
-tbody.innerHTML = <tr><td colspan="4" style="padding: 12px; text-align: center; color: #27ae60; font-weight: bold;">Нарушений в ходе проверки не выявлено. Объект соответствует нормам ОТиПБ.</td></tr>;
-        } else {
-        violationsOnly.forEach((item, index) => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-
-            ${index + 1}
-
-            [${item.category}]
-
-            ${item.question}
-            ${item.normative ? `
-            Норматив: ${item.normative}
-
-            ` : ''}
-
-            ${item.comment}
-
-            `;
-
-            tbody.appendChild(tr);
-
-            });
+        const row = tbody.insertRow();
+        const cell = row.insertCell();
+        cell.colSpan = 4;
+        cell.style.padding = "12px";
+        cell.style.textAlign = "center";
+        cell.style.color = "#27ae60";
+        cell.style.fontWeight = "bold";
+        cell.textContent = "Нарушений в ходе проверки не выявлено. Объект соответствует нормам ОТиПБ.";
+    } else {
+        violationsOnly.forEach(function(item, index) {
+            const row = tbody.insertRow();
+            
+            const cNum = row.insertCell();
+            cNum.style.border = "1px solid #ddd";
+            cNum.style.padding = "8px";
+            cNum.style.textAlign = "center";
+            cNum.textContent = index + 1;
+            
+            const cCat = row.insertCell();
+            cCat.style.border = "1px solid #ddd";
+            cCat.style.padding = "8px";
+            cCat.style.fontWeight = "bold";
+            cCat.style.fontSize = "13px";
+            cCat.textContent = "[" + item.category + "]";
+            
+            const cQuest = row.insertCell();
+            cQuest.style.border = "1px solid #ddd";
+            cQuest.style.padding = "8px";
+            cQuest.style.fontSize = "13px";
+            
+            if (item.normative) {
+                cQuest.textContent = item.question + " (Норматив: " + item.normative + ")";
+            } else {
+                cQuest.textContent = item.question;
+            }
+            
+            const cComm = row.insertCell();
+            cComm.style.border = "1px solid #ddd";
+            cComm.style.padding = "8px";
+            cComm.style.fontSize = "13px";
+            cComm.style.color = "#b33939";
+            cComm.style.backgroundColor = "#fdf2f2";
+            cComm.textContent = item.comment;
+        });
     }
 
     const printElement = document.getElementById('print-blank-zone');
-    printElement.style.display = 'block'; // Показываем блок для работы html2pdf
+    printElement.style.display = 'block';
 
     const pdfOptions = {
         margin: 10,
-        filename: 'Акт_ОТ_' + auditSession.objectName.replace(/[^a-zA-Z0-9а-яА-Я_]/g, "") + '' + currentDateStr + '.pdf',
+        filename: 'Акт_ОТ_' + auditSession.objectName.replace(/[^a-zA-Z0-9а-яА-Я_]/g, "_") + '_' + currentDateStr + '.pdf',
         image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 1.5, useCORS: true, logging: false }, // снизили масштаб для стабильности на мобильных
+        html2canvas: { scale: 1.5, useCORS: true, logging: false }, 
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-            };
+    };
+
     try {
         await html2pdf().set(pdfOptions).from(printElement).save();
         printElement.style.display = 'none';
         btnPdf.innerText = "2. Скачать Акт в PDF 📄";
         btnPdf.disabled = false;
-
-        if (confirm("Акт сохранен на ваше устройство! Очистить страницу для начала новой проверки?")) {
+        
+        if (confirm("Акт сохранен на ваше устройство! Очистить форму для новой проверки?")) {
             location.reload();
-            }
-        } catch(err) {
+        }
+    } catch(err) {
         console.error("Ошибка html2pdf:", err);
         printElement.style.display = 'none';
         btnPdf.disabled = false;
         btnPdf.innerText = "2. Скачать Акт в PDF 📄";
-        alert("Браузер перегружен. Пожалуйста, закройте вкладку, откройте сайт заново через Google Chrome/Safari и повторите попытку.");
+        alert("Произошел сбой сборки PDF на мобильном устройстве.");
     }
 }
 
-function backToStep1() { document.getElementById('step-3-checklist').style.display = 'none'; document.getElementById('step-1-form').style.display = 'block'; }
-
-            
+function backToStep1() { 
+    document.getElementById('step-3-checklist').style.display = 'none'; 
+    document.getElementById('step-1-form').style.display = 'block'; 
+}
+    
