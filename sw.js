@@ -1,12 +1,13 @@
-const CACHE_NAME = 'otipb-v1';
-// Файлы, которые будут жестко сохранены в память телефона
+const CACHE_NAME = 'otipb-v2';
+
+// Список файлов, которые жестко сохраняются в память устройства
 const ASSETS = [
   './',
   './index.html',
   './app.js',
   './style.css',
   './manifest.json',
-  'https://cloudflare.com'
+  'https://githack.com'
 ];
 
 self.addEventListener('install', (e) => {
@@ -17,8 +18,22 @@ self.addEventListener('install', (e) => {
   );
 });
 
+self.addEventListener('activate', (e) => {
+  // Очищаем старый кэш v1, чтобы принудительно обновить библиотеку PDF
+  e.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
+      );
+    })
+  );
+});
+
 self.addEventListener('fetch', (e) => {
-  // Запросы к Google API не кэшируем, их обрабатывает app.js отдельно
   if (e.request.url.includes('://google.com')) {
     return;
   }
