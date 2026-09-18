@@ -1,15 +1,12 @@
 // НА СТРОКЕ 2 УКАЖИТЕ ССЫЛКУ, КОТОРУЮ ВАМ ВЫДАЛ GOOGLE APPS SCRIPT ПРИ ДЕПЛОЕ:
 const API_URL = "https://script.google.com/macros/s/AKfycbyLFU7ceVKxS-L8kDjcJwKLZ-AAXXXzOICKNlTypxu_zopUcPtf_e90pzDi6xmbsDy7/exec"; 
 
-// НА СТРОКЕ 2 УКАЖИТЕ ССЫЛКУ, КОТОРУЮ ВАМ ВЫДАЛ GOOGLE APPS SCRIPT ПРИ ДЕПЛОЕ:
-const API_URL = "https://google.com"; 
-
 let auditSession = { inspector: '', objectName: '', contractor: '', results: [] };
 let finalViolationsText = "";
 
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').then(function() {
-        console.log("Офлайн-модуль активен");
+        console.log("Офлайн-модуль PWA активирован");
     });
 }
 
@@ -226,7 +223,6 @@ async function syncOfflineQueue() {
     alert("🔄 Обнаружен интернет: сохраненные офлайн-акты переданы в Google Таблицу!");
 }
 
-// НАШЕ НАДЁЖНОЕ, АВТОНОМНОЕ И НЕУЯЗВИМОЕ РЕШЕНИЕ ДЛЯ PDF ЧЕРЕЗ СИСТЕМУ WINDOW.PRINT()
 function downloadChecklistPdf() {
     const currentDateStr = new Date().toLocaleDateString('ru-RU');
     
