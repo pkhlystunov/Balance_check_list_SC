@@ -2,7 +2,6 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbyLFU7ceVKxS-L8kDjcJwKLZ-AAXXXzOICKNlTypxu_zopUcPtf_e90pzDi6xmbsDy7/exec"; 
 
 let auditSession = { inspector: '', objectName: '', contractor: '', results: [] };
-let finalViolationsText = "";
 
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').then(() => console.log("Офлайн-модуль активен"));
@@ -60,7 +59,6 @@ async function startFullAudit() {
     if(!insp || !obj || !contr) return alert("Заполните форму первого шага!");
     
     auditSession.inspector = insp; auditSession.objectName = obj; auditSession.contractor = contr; auditSession.results = [];
-    finalViolationsText = "";
     document.getElementById('pdf-btn').disabled = true;
     document.getElementById('submit-btn').disabled = false;
     document.getElementById('submit-btn').innerText = "1. Сохранить Акт (В реестр) 💾";
@@ -123,30 +121,28 @@ function setResult(id, status, question, category, normative) {
     document.getElementById('q-box-' + id).style.borderLeftColor = status === 'Соответствует' ? 'var(--success)' : 'var(--danger)';
 }
 
-// ИСПРАВЛЕННЫЙ СБОР ВСЕХ НАРУШЕНИЙ БЕЗ ПОТЕРЬ
 async function submitAuditWithOffline() {
     if (auditSession.results.length === 0) return alert("Вы не ответили ни на один вопрос!");
     
     const violations = [];
     
-    // Безопасный сбор данных на основе ответов инспектора, а не сырого кэша
+    // Переносим актуальные комментарии из полей инспектора в массив
     auditSession.results.forEach(item => {
+        const inputField = document.getElementById('comment-' + item.id);
+        if (inputField) {
+            item.comment = inputField.value.trim() || "не расписано";
+        }
+        
         if (item.status === 'Нарушение') {
-            const inputField = document.getElementById('comment-' + item.id);
-            const userComment = inputField ? inputField.value.trim() : "";
-            const finalComment = userComment || "не расписано";
-            
             let line = `• [${item.category}] ${item.question}`;
             if (item.normative) line += ` (Норматив: ${item.normative})`;
-            line += `\n  Замечание: ${finalComment}`;
-            
+            line += `\n  Замечание: ${item.comment}`;
             violations.push(line);
         }
     });
 
-    // Объединяем абсолютно ВСЕ найденные нарушения через двойной перенос строки
-    finalViolationsText = violations.length > 0 ? violations.join("\n\n") : "Нарушений в ходе проверки не выявлено. Объект соответствует нормам ОТиПБ.";
-    auditSession.aggregatedViolations = finalViolationsText;
+    // Текст для отправки в ОДНУ ячейку Google Таблицы
+    auditSession.aggregatedViolations = violations.length > 0 ? violations.join("\n\n") : "Нарушений в ходе проверки не выявлено.";
 
     const btn = document.getElementById('submit-btn');
     btn.disabled = true;
@@ -157,7 +153,7 @@ async function submitAuditWithOffline() {
             await fetch(API_URL, { method: 'POST', body: JSON.stringify(auditSession), headers: { 'Content-Type': 'text/plain' } });
             btn.innerText = "✅ Успешно сохранено!";
             document.getElementById('pdf-btn').disabled = false;
-            alert("Данные успешно занесены в Google Таблицу!");
+            alert("Данные успешно сохранены в Google Реестр!");
         } catch (e) {
             saveToOfflineQueue(auditSession);
         }
@@ -174,7 +170,7 @@ function saveToOfflineQueue(session) {
     const btn = document.getElementById('submit-btn');
     btn.innerText = "💾 Сохранено офлайн!";
     document.getElementById('pdf-btn').disabled = false;
-    alert("⚠️ Нет связи. Акт надежно сохранен в памяти устройства и отправится в Google, как только появится сеть. Теперь вы можете нажать кнопку №2 и скачать полный PDF-акт.");
+    alert("⚠️ Нет связи. Акт надежно сохранен в памяти устройства. Вы можете нажать кнопку №2 и скачать PDF-акт.");
 }
 
 async function syncOfflineQueue() {
@@ -186,10 +182,10 @@ async function syncOfflineQueue() {
         } catch (e) { return; }
     }
     localStorage.removeItem('offline_audit_queue');
-    alert("🔄 Обнаружен интернет: все накопленные офлайн-акты успешно переданы в Google Таблицу!");
+    alert("🔄 Обнаружен интернет: сохраненные офлайн-акты переданы в Google Таблицу!");
 }
 
-// НАДЕЖНАЯ ГЕНЕРАЦИЯ PDF БЕЗ ОБРЕЗАНИЯ ДЛИННЫХ ТЕКСТОВЫХ БЛОКОВ
+// НАДЕЖНЫЙ СБОРЩИК ЧИСТОЙ HTML-ТАБЛИЦЫ ДЛЯ ИДЕАЛЬНОЙ ГЕНЕРАЦИИ PDF БЕЗ СБОЕВ
 async function downloadChecklistPdf() {
     const btnPdf = document.getElementById('pdf-btn');
     btnPdf.disabled = true;
@@ -197,40 +193,73 @@ async function downloadChecklistPdf() {
 
     const currentDateStr = new Date().toLocaleDateString('ru-RU');
     
-    // Заполняем скрытую печатную форму на странице
+    // Заполняем текстовую шапку бланка
     document.getElementById('p-date').textContent = currentDateStr;
     document.getElementById('p-inspector').textContent = auditSession.inspector;
     document.getElementById('p-object').textContent = auditSession.objectName;
     document.getElementById('p-contractor').textContent = auditSession.contractor;
-    document.getElementById('p-violations').textContent = finalViolationsText;
-    const printElement = document.getElementById('print-blank-zone');
-    printElement.style.display = 'block'; // Временно включаем для рендеринга библиотеки
-    const pdfOptions = {
-        margin: 15,
-        filename: 'Акт_ОТ_' + auditSession.objectName.replace(/[^a-zA-Z0-9а-яА-Я_]/g, "") + '' + currentDateStr + '.pdf',
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } // Предотвращает обрезание строк на стыке страниц
-            };
     
+    // Генерируем HTML-строки таблицы нарушений
+    const tbody = document.getElementById('p-violations-tbody');
+    tbody.innerHTML = ""; // очищаем старые данные
+    
+    const violationsOnly = auditSession.results.filter(r => r.status === 'Нарушение');
+    
+    if (violationsOnly.length === 0) {
+tbody.innerHTML = <tr><td colspan="4" style="padding: 12px; text-align: center; color: #27ae60; font-weight: bold;">Нарушений в ходе проверки не выявлено. Объект соответствует нормам ОТиПБ.</td></tr>;
+        } else {
+        violationsOnly.forEach((item, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+
+            ${index + 1}
+
+            [${item.category}]
+
+            ${item.question}
+            ${item.normative ? `
+            Норматив: ${item.normative}
+
+            ` : ''}
+
+            ${item.comment}
+
+            `;
+
+            tbody.appendChild(tr);
+
+            });
+    }
+
+    const printElement = document.getElementById('print-blank-zone');
+    printElement.style.display = 'block'; // Показываем блок для работы html2pdf
+
+    const pdfOptions = {
+        margin: 10,
+        filename: 'Акт_ОТ_' + auditSession.objectName.replace(/[^a-zA-Z0-9а-яА-Я_]/g, "") + '' + currentDateStr + '.pdf',
+        image: { type: 'jpeg', quality: 0.95 },
+        html2canvas: { scale: 1.5, useCORS: true, logging: false }, // снизили масштаб для стабильности на мобильных
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            };
     try {
         await html2pdf().set(pdfOptions).from(printElement).save();
         printElement.style.display = 'none';
         btnPdf.innerText = "2. Скачать Акт в PDF 📄";
         btnPdf.disabled = false;
 
-        if (confirm("Акт сохранен! Очистить форму для новой проверки?")) {
+        if (confirm("Акт сохранен на ваше устройство! Очистить страницу для начала новой проверки?")) {
             location.reload();
-        }
+            }
         } catch(err) {
-        console.error(err);
+        console.error("Ошибка html2pdf:", err);
         printElement.style.display = 'none';
         btnPdf.disabled = false;
         btnPdf.innerText = "2. Скачать Акт в PDF 📄";
-        alert("Ошибка создания PDF. Попробуйте еще раз.");
+        alert("Браузер перегружен. Пожалуйста, закройте вкладку, откройте сайт заново через Google Chrome/Safari и повторите попытку.");
     }
 }
 
 function backToStep1() { document.getElementById('step-3-checklist').style.display = 'none'; document.getElementById('step-1-form').style.display = 'block'; }
-        
+
+            
