@@ -9,10 +9,29 @@
     <!-- Библиотека PDF -->
     <script src="https://cloudflare.com"></script>
     <style>
-        #print-blank-zone { display: none; background: #fff; color: #000; padding: 25px; font-family: Arial, sans-serif; }
-        .network-status { text-align: center; padding: 8px; font-weight: bold; border-radius: 6px; margin-bottom: 15px; font-size: 14px; }
-        .online-mode { background: #d4edda; color: #155724; }
-        .offline-mode { background: #fff3cd; color: #856404; }
+        #print-blank-zone { 
+            display: none; 
+            background: #fff; 
+            color: #000; 
+            padding: 25px; 
+            font-family: Arial, sans-serif; 
+        }
+        .network-status { 
+            text-align: center; 
+            padding: 8px; 
+            font-weight: bold; 
+            border-radius: 6px; 
+            margin-bottom: 15px; 
+            font-size: 14px; 
+        }
+        .online-mode { 
+            background: #d4edda; 
+            color: #155724; 
+        }
+        .offline-mode { 
+            background: #fff3cd; 
+            color: #856404; 
+        }
     </style>
 </head>
 <body>
@@ -79,7 +98,6 @@
     
     <div style="font-size: 16px; font-weight: bold; margin-bottom: 15px; color: #2c3e50;">Выявленные нарушения и замечания:</div>
     
-    <!-- Сводная таблица нарушений вместо неформатированного текста -->
     <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px;">
         <thead>
             <tr style="background-color: #f2f2f2;">
@@ -90,7 +108,7 @@
             </tr>
         </thead>
         <tbody id="p-violations-tbody">
-            <!-- Динамические строки добавляются через app.js -->
+            <!-- Строки генерируются через app.js без конфликтов разметки -->
         </tbody>
     </table>
     
