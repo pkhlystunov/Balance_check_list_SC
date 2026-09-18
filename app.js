@@ -1,6 +1,9 @@
 // НА СТРОКЕ 2 УКАЖИТЕ ССЫЛКУ, КОТОРУЮ ВАМ ВЫДАЛ GOOGLE APPS SCRIPT ПРИ ДЕПЛОЕ:
 const API_URL = "https://script.google.com/macros/s/AKfycbyLFU7ceVKxS-L8kDjcJwKLZ-AAXXXzOICKNlTypxu_zopUcPtf_e90pzDi6xmbsDy7/exec"; 
 
+// НА СТРОКЕ 2 УКАЖИТЕ ССЫЛКУ, КОТОРУЮ ВАМ ВЫДАЛ GOOGLE APPS SCRIPT ПРИ ДЕПЛОЕ:
+const API_URL = "https://google.com"; 
+
 let auditSession = { inspector: '', objectName: '', contractor: '', results: [] };
 let finalViolationsText = "";
 
@@ -146,7 +149,7 @@ function renderChecklist(data) {
         container.appendChild(card);
     });
 }
-      function setResult(id, status, question, category, normative) {
+function setResult(id, status, question, category, normative) {
     let item = auditSession.results.find(function(r) { return r.id === id; });
     if (!item) {
         item = { id: id, question: question, category: category, normative: normative, status: status, comment: '' };
@@ -223,11 +226,8 @@ async function syncOfflineQueue() {
     alert("🔄 Обнаружен интернет: сохраненные офлайн-акты переданы в Google Таблицу!");
 }
 
-async function downloadChecklistPdf() {
-    const btnPdf = document.getElementById('pdf-btn');
-    btnPdf.disabled = true;
-    btnPdf.innerText = "⏳ Сборка PDF...";
-
+// НАШЕ НАДЁЖНОЕ, АВТОНОМНОЕ И НЕУЯЗВИМОЕ РЕШЕНИЕ ДЛЯ PDF ЧЕРЕЗ СИСТЕМУ WINDOW.PRINT()
+function downloadChecklistPdf() {
     const currentDateStr = new Date().toLocaleDateString('ru-RU');
     
     document.getElementById('p-date').textContent = currentDateStr;
@@ -287,38 +287,17 @@ async function downloadChecklistPdf() {
         });
     }
 
-    const printElement = document.getElementById('print-blank-zone');
-    printElement.style.display = 'block';
-
-    const pdfOptions = {
-        margin: 10,
-        filename: 'Акт_ОТ_' + auditSession.objectName.replace(/[^a-zA-Z0-9а-яА-Я_]/g, "_") + '_' + currentDateStr + '.pdf',
-        image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 1.5, useCORS: true, logging: false }, 
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-    };
-
-    try {
-        await html2pdf().set(pdfOptions).from(printElement).save();
-        printElement.style.display = 'none';
-        btnPdf.innerText = "2. Скачать Акт в PDF 📄";
-        btnPdf.disabled = false;
-        
-        if (confirm("Акт сохранен на ваше устройство! Очистить форму для новой проверки?")) {
+    // Принудительно вызываем нативное системное окно вашего устройства (Сохранить в PDF)
+    window.print();
+    
+    setTimeout(function() {
+        if (confirm("Выгрузка завершена! Очистить форму и начать новый обход?")) {
             location.reload();
         }
-    } catch(err) {
-        console.error("Ошибка html2pdf:", err);
-        printElement.style.display = 'none';
-        btnPdf.disabled = false;
-        btnPdf.innerText = "2. Скачать Акт в PDF 📄";
-        alert("Произошел сбой сборки PDF на мобильном устройстве.");
-    }
+    }, 1000);
 }
 
 function backToStep1() { 
     document.getElementById('step-3-checklist').style.display = 'none'; 
     document.getElementById('step-1-form').style.display = 'block'; 
 }
-    
