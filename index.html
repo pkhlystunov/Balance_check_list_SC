@@ -4,33 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Контроль ОТиПБ</title>
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Специальные стили для адаптивной печати без открытия новых вкладок */
-        #print-blank-zone {
-            display: none;
-            background: #fff;
-            color: #000;
-            padding: 20px;
-            font-family: Arial, sans-serif;
-            line-height: 1.5;
-        }
-
-        /* МАГИЯ ПЕЧАТИ: При вызове системного PDF скрываем приложение и показываем ТОЛЬКО чистый блакт */
+        #print-blank-zone { display: none; background: #fff; color: #000; padding: 20px; font-family: Arial, sans-serif; line-height: 1.5; }
         @media print {
             body { background: #fff; padding: 0; margin: 0; }
             .container { display: none !important; }
             #print-blank-zone { display: block !important; }
         }
+        /* Индикатор сети */
+        .network-status { text-align: center; padding: 8px; font-weight: bold; border-radius: 6px; margin-bottom: 15px; font-size: 14px; }
+        .online-mode { background: #d4edda; color: #155724; }
+        .offline-mode { background: #fff3cd; color: #856404; }
+        .sync-badge { background: #e74c3c; color: white; padding: 2px 6px; border-radius: 10px; font-size: 12px; margin-left: 5px; display: none; }
     </style>
 </head>
 <body>
 
-<!-- ОСНОВНОЙ ИНТЕРФЕЙС ПРИЛОЖЕНИЯ -->
 <div class="container">
     <h2>📋 Контроль Охраны Труда и ПБ</h2>
     
-    <!-- ШАГ 1: Ввод данных проверки -->
+    <!-- Светофор статуса сети -->
+    <div id="net-indicator" class="network-status online-mode">🌐 Режим: Онлайн (Данные пишутся в облако)</div>
+
     <div id="step-1-form" class="card primary-border">
         <div class="loading-overlay" id="setup-loading">⏳ Подключение к реестрам Google Таблиц...</div>
         
@@ -54,7 +51,6 @@
         <div id="error-display" class="error-log"></div>
     </div>
 
-    <!-- ШАГ 2: Экран прохождения полного чек-листа -->
     <div id="step-3-checklist" style="display:none;">
         <div class="audit-header card">
             <h3 style="margin-top:0; color:#2c3e50;">Текущий обход</h3>
@@ -64,34 +60,28 @@
             <p>📅 <b>Дата:</b> <span id="audit-meta-date"></span></p>
         </div>
         
-        <!-- Лента вопросов для инспектора -->
         <div id="questions-container"></div>
         
-        <!-- Блок раздельных кнопок управления -->
         <div style="margin-top: 25px; display: flex; flex-direction: column; gap: 10px;">
-            <button onclick="submitAuditOnly()" id="submit-btn" class="btn btn-primary" style="background: #27ae60;">1. Сохранить в Реестр Google 💾</button>
+            <button onclick="submitAuditWithOffline()" id="submit-btn" class="btn btn-primary" style="background: #27ae60;">1. Сохранить Акт (В реестр) 💾</button>
             <button onclick="openNativePrintSystem()" id="pdf-btn" class="btn btn-secondary" style="background: #3498db; color: white;" disabled>2. Открыть Акт в PDF / Печать 📄</button>
-            <button onclick="backToStep1()" id="back-btn" class="btn btn-secondary">← Назад к выбору объекта</button>
+            <button onclick="backToStep1()" class="btn btn-secondary">← Назад к выбору объекта</button>
         </div>
     </div>
 </div>
 
-<!-- ЧИСТЫЙ ПЕЧАТНЫЙ БЛАНК (Браузер отобразит его только в момент формирования PDF) -->
 <div id="print-blank-zone">
     <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;">
         <h2 style="margin: 0 0 5px 0; font-size: 20px;">АКТ ПРОВЕРКИ СОБЛЮДЕНИЯ ТРЕБОВАНИЙ ОТиПБ</h2>
     </div>
-    
     <table style="width: 100%; margin-bottom: 25px; font-size: 14px; border-collapse: collapse;">
         <tr><td style="padding: 5px 0; font-weight: bold; width: 35%;">Дата проверки:</td><td id="p-date"></td></tr>
         <tr><td style="padding: 5px 0; font-weight: bold;">Выполнил проверку (Инспектор):</td><td id="p-inspector"></td></tr>
         <tr><td style="padding: 5px 0; font-weight: bold;">Объект контроля:</td><td id="p-object"></td></tr>
         <tr><td style="padding: 5px 0; font-weight: bold;">Подрядная организация:</td><td id="p-contractor"></td></tr>
     </table>
-    
     <div style="font-size: 15px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Результаты инспекции и выявленные нарушения:</div>
     <div id="p-violations" style="font-size: 14px; white-space: pre-wrap; line-height: 1.6;"></div>
-    
     <div style="margin-top: 60px; display: flex; justify-content: space-between; font-size: 14px;">
         <div>Подпись проверяющего: _____________________</div>
         <div>Подпись представителя подрядчика: _____________________</div>
